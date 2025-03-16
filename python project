@@ -1,0 +1,113 @@
+import mysql.connector
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+
+def connect_db():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="pathma@98",  # Change this to your MySQL password
+        database="employee_db",
+        auth_plugin="mysql_native_password"
+    )
+
+
+class EmployeeManagement:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Employee Management System")
+        self.root.geometry("800x500")
+
+        # Labels and Entry Fields
+        tk.Label(root, text="Name:").grid(row=0, column=0)
+        self.name_entry = tk.Entry(root)
+        self.name_entry.grid(row=0, column=1)
+
+        tk.Label(root, text="Age:").grid(row=1, column=0)
+        self.age_entry = tk.Entry(root)
+        self.age_entry.grid(row=1, column=1)
+
+        tk.Label(root, text="Date of Joining (YYYY-MM-DD):").grid(row=2, column=0)
+        self.doj_entry = tk.Entry(root)
+        self.doj_entry.grid(row=2, column=1)
+
+        tk.Label(root, text="Email:").grid(row=3, column=0)
+        self.email_entry = tk.Entry(root)
+        self.email_entry.grid(row=3, column=1)
+
+        tk.Label(root, text="Gender:").grid(row=4, column=0)
+        self.gender_entry = tk.Entry(root)
+        self.gender_entry.grid(row=4, column=1)
+
+        tk.Label(root, text="Contact:").grid(row=5, column=0)
+        self.contact_entry = tk.Entry(root)
+        self.contact_entry.grid(row=5, column=1)
+
+        tk.Label(root, text="Address:").grid(row=6, column=0)
+        self.address_entry = tk.Entry(root)
+        self.address_entry.grid(row=6, column=1)
+
+        # Buttons
+        ttk.Button(root, text="Add Employee", command=self.add_employee).grid(row=7, column=0)
+        ttk.Button(root, text="View Employees", command=self.view_employees).grid(row=7, column=1)
+        ttk.Button(root, text="Delete Employee", command=self.delete_employee).grid(row=7, column=2)
+
+        # Treeview for displaying records
+        self.tree = ttk.Treeview(root, columns=("ID", "Name", "Age", "DOJ", "Email", "Gender", "Contact", "Address"),
+                                 show="headings")
+        for col in self.tree['columns']:
+            self.tree.heading(col, text=col)
+        self.tree.grid(row=8, column=0, columnspan=3)
+
+    def add_employee(self):
+        name = self.name_entry.get()
+        age = self.age_entry.get()
+        doj = self.doj_entry.get()
+        email = self.email_entry.get()
+        gender = self.gender_entry.get()
+        contact = self.contact_entry.get()
+        address = self.address_entry.get()
+
+        con = connect_db()
+        cur = con.cursor()
+        cur.execute(
+            "INSERT INTO employees (name, age, doj, email, gender, contact, address) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (name, age, doj, email, gender, contact, address))
+        con.commit()
+        con.close()
+        messagebox.showinfo("Success", "Employee Added Successfully!")
+        self.view_employees()
+
+    def view_employees(self):
+        con = connect_db()
+        cur = con.cursor()
+        cur.execute("SELECT * FROM employees")
+        rows = cur.fetchall()
+        con.close()
+
+        self.tree.delete(*self.tree.get_children())
+        for row in rows:
+            self.tree.insert("", "end", values=row)
+
+    def delete_employee(self):
+        selected_item = self.tree.selection()
+        if not selected_item:
+            messagebox.showerror("Error", "Please select a record to delete")
+            return
+
+        employee_id = self.tree.item(selected_item)['values'][0]
+        con = connect_db()
+        cur = con.cursor()
+        cur.execute("DELETE FROM employees WHERE id = %s", (employee_id,))
+        con.commit()
+        con.close()
+        messagebox.showinfo("Deleted", "Employee Record Deleted Successfully!")
+        self.view_employees()
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = EmployeeManagement(root)
+    root.mainloop()
+    
